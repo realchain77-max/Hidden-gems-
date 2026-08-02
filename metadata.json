@@ -1,0 +1,6 @@
+{
+  "name": "Hidden Gems",
+  "description": "Discover off-the-beaten-path local spots, read reviews, and explore verified business activities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
