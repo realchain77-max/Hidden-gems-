@@ -22,6 +22,9 @@ interface GemDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGem(gem: HiddenGem): Long
 
+    @Query("DELETE FROM hidden_gems")
+    suspend fun deleteAllGems()
+
     @Update
     suspend fun updateGem(gem: HiddenGem)
 

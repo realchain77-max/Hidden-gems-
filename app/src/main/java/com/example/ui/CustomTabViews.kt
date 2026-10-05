@@ -1,5 +1,7 @@
 package com.example.ui
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -7,6 +9,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
@@ -239,15 +242,37 @@ fun CategoryIllustrationCanvas(category: String, modifier: Modifier = Modifier) 
 @Composable
 fun DiscoveryScreen(
     viewModel: GemViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenFullMap: (() -> Unit)? = null,
+    onOpenPwa: (() -> Unit)? = null,
+    onOpenAiScout: (() -> Unit)? = null,
+    onOpenAiTour: (() -> Unit)? = null,
+    onOpenUpload: (() -> Unit)? = null,
+    onScrollPerused: ((Boolean) -> Unit)? = null
 ) {
     val filteredGems by viewModel.filteredGems.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val currentSortOption by viewModel.sortOption.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val favoriteGemIds by viewModel.favoriteGemIds.collectAsState()
     val votedGems by viewModel.votedGems.collectAsState()
 
-    val categories = listOf("All", "Scenic", "Parks", "Historic", "Beaches", "Cafes", "Arts")
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
+
+    val categories = listOf("All", "Scenic", "Parks", "Historic", "Beaches", "Cafes", "Arts", "Dining", "Nightlife")
+    val sortOptions = listOf("Popularity", "Distance", "Verified First", "Alphabetical")
+
+    val listState = rememberLazyListState()
+    LaunchedEffect(listState.isScrollInProgress, listState.firstVisibleItemIndex) {
+        if (listState.isScrollInProgress) {
+            if (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 20) {
+                onScrollPerused?.invoke(true)
+            } else if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset <= 10) {
+                onScrollPerused?.invoke(false)
+            }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -255,54 +280,13 @@ fun DiscoveryScreen(
             .statusBarsPadding()
             .padding(horizontal = 16.dp)
     ) {
-        // Upper search and title block
-        Text(
-            text = "Explore Secrets",
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                fontFamily = FontFamily.Serif
-            ),
-            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
-        )
-        Text(
-            text = "Discover quiet, unvisited spots in San Francisco",
-            style = MaterialTheme.typography.bodyMedium.copy(color = SophisticatedTextMuted),
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
-        // Integrated Search Bar
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { viewModel.updateSearchQuery(it) },
-            placeholder = { Text("Search by name, category, or description...", color = SophisticatedTextMuted) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Emerald500) },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                        Icon(Icons.Default.Close, contentDescription = null, tint = Color.White)
-                    }
-                }
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = Emerald500,
-                unfocusedBorderColor = SophisticatedBorder,
-                focusedContainerColor = SophisticatedBgDark,
-                unfocusedContainerColor = SophisticatedBgDark
-            ),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 12.dp)
-        )
+        Spacer(modifier = Modifier.height(86.dp))
 
         // Airbnb Floating categories row
         LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(categories) { cat ->
@@ -348,6 +332,133 @@ fun DiscoveryScreen(
             }
         }
 
+        // Sort Options Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(Icons.Default.Sort, contentDescription = "Sort", tint = Emerald500, modifier = Modifier.size(16.dp))
+                Text("Sort:", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                items(sortOptions) { opt ->
+                    val isSelected = opt == currentSortOption
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (isSelected) Color(0xFF263238) else SophisticatedBgDark)
+                            .border(1.dp, if (isSelected) Emerald500 else SophisticatedBorder, RoundedCornerShape(12.dp))
+                            .clickable { viewModel.setSortOption(opt) }
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                    ) {
+                        Text(
+                            text = opt,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) Emerald500 else Color.LightGray
+                        )
+                    }
+                }
+            }
+        }
+
+        // Gemini AI Discovery Intelligence Bar
+        Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF13231B)),
+            border = BorderStroke(1.dp, Color(0xFF00E676).copy(alpha = 0.4f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 10.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(Color(0xFF00E676).copy(alpha = 0.2f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = Color(0xFF00E676),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = "Gemini Local Scout & Itinerary",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            text = "Ask for recommendations or plan a secret tour",
+                            color = Color(0xFFA6C5B3),
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Button(
+                        onClick = { onOpenAiScout?.invoke() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676)),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.height(30.dp)
+                    ) {
+                        Text("Ask Scout", color = Color(0xFF060D09), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                    }
+
+                    OutlinedButton(
+                        onClick = { onOpenAiTour?.invoke() },
+                        border = BorderStroke(1.dp, Color(0xFF00E676).copy(alpha = 0.6f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF00E676)),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.height(30.dp)
+                    ) {
+                        Text("Day Tour", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    if (onOpenUpload != null) {
+                        Button(
+                            onClick = { onOpenUpload.invoke() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF133621)),
+                            border = BorderStroke(1.dp, Color(0xFF00E676).copy(alpha = 0.8f)),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            Icon(Icons.Default.Add, null, tint = Color(0xFF00E676), modifier = Modifier.size(13.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("Upload", color = Color(0xFF00E676), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+
         // Lazy column displaying lists of spots
         if (filteredGems.isEmpty()) {
             Box(
@@ -371,18 +482,30 @@ fun DiscoveryScreen(
                         style = MaterialTheme.typography.titleMedium.copy(color = Color.White)
                     )
                     Text(
-                        text = "Try clearing search filters or switching categories.",
+                        text = "Try clearing search filters, or be the first to capture this secret spot!",
                         style = MaterialTheme.typography.bodyMedium.copy(color = SophisticatedTextMuted),
                         textAlign = TextAlign.Center
                     )
-                    Button(
-                        onClick = {
-                            viewModel.updateSearchQuery("")
-                            viewModel.setCategory("All")
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Emerald500)
-                    ) {
-                        Text("Reset Filters", color = SophisticatedBgDark)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = {
+                                viewModel.updateSearchQuery("")
+                                viewModel.setCategory("All")
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = SophisticatedSurface)
+                        ) {
+                            Text("Reset Filters", color = Color.White)
+                        }
+                        if (onOpenUpload != null) {
+                            Button(
+                                onClick = onOpenUpload,
+                                colors = ButtonDefaults.buttonColors(containerColor = Emerald500)
+                            ) {
+                                Icon(Icons.Default.Add, null, tint = SophisticatedBgDark, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Upload Gem", color = SophisticatedBgDark, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
             }
@@ -391,6 +514,7 @@ fun DiscoveryScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
+                state = listState,
                 contentPadding = PaddingValues(bottom = 100.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -470,6 +594,41 @@ fun DiscoveryScreen(
                                         )
                                     )
                                 }
+
+                                // Anti-Fraud Live Camera & GPS verification badge
+                                if (gem.isLiveVerified) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomStart)
+                                            .padding(10.dp)
+                                            .background(
+                                                Color(0xEE0A1E14),
+                                                RoundedCornerShape(8.dp)
+                                            )
+                                            .border(BorderStroke(1.dp, Color(0xFF00E676).copy(alpha = 0.6f)), RoundedCornerShape(8.dp))
+                                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.CameraAlt,
+                                                contentDescription = null,
+                                                tint = Color(0xFF00E676),
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                            Text(
+                                                text = "Live GPS & Time Proof",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF00E676),
+                                                    fontSize = 10.sp
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
                             }
 
                             // Info details
@@ -490,16 +649,43 @@ fun DiscoveryScreen(
                                         modifier = Modifier.weight(1f)
                                     )
 
-                                    // Favorites heart button
-                                    IconButton(
-                                        onClick = { viewModel.toggleFavorite(gem.id) },
-                                        modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                            contentDescription = null,
-                                            tint = if (isFavorite) Color.Red else Color.White
-                                        )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        // Share Public Link button
+                                        IconButton(
+                                            onClick = {
+                                                val shareUrl = "https://hiddengems.app/spot/${gem.id}"
+                                                val shareText = "Check out this spot on HiddenGems: ${gem.title} (${gem.category}) - $shareUrl"
+                                                clipboard.setText(AnnotatedString(shareUrl))
+                                                Toast.makeText(context, "Public spot link copied!", Toast.LENGTH_SHORT).show()
+                                                
+                                                val sendIntent = Intent().apply {
+                                                    action = Intent.ACTION_SEND
+                                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                                    putExtra(Intent.EXTRA_TITLE, gem.title)
+                                                    type = "text/plain"
+                                                }
+                                                context.startActivity(Intent.createChooser(sendIntent, "Share Public Spot Link"))
+                                            },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Share,
+                                                contentDescription = "Share Public Link",
+                                                tint = Emerald500
+                                            )
+                                        }
+
+                                        // Favorites heart button
+                                        IconButton(
+                                            onClick = { viewModel.toggleFavorite(gem.id) },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                                contentDescription = null,
+                                                tint = if (isFavorite) Color.Red else Color.White
+                                            )
+                                        }
                                     }
                                 }
 
@@ -600,13 +786,25 @@ fun DiscoveryScreen(
 @Composable
 fun LocationSensorScreen(
     viewModel: GemViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onScrollPerused: ((Boolean) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val allGems by viewModel.filteredGems.collectAsState()
     val userLat by viewModel.userLocationLat.collectAsState()
     val userLng by viewModel.userLocationLng.collectAsState()
     val isSensorActive by viewModel.isSensorRunning.collectAsState()
+
+    val proximityListState = rememberLazyListState()
+    LaunchedEffect(proximityListState.isScrollInProgress, proximityListState.firstVisibleItemIndex) {
+        if (proximityListState.isScrollInProgress) {
+            if (proximityListState.firstVisibleItemIndex > 0 || proximityListState.firstVisibleItemScrollOffset > 25) {
+                onScrollPerused?.invoke(true)
+            } else if (proximityListState.firstVisibleItemIndex == 0 && proximityListState.firstVisibleItemScrollOffset <= 10) {
+                onScrollPerused?.invoke(false)
+            }
+        }
+    }
 
     // Sort spots by Haversine distance
     val sortedGems = remember(allGems, userLat, userLng) {
@@ -653,6 +851,8 @@ fun LocationSensorScreen(
             .statusBarsPadding()
             .padding(horizontal = 16.dp)
     ) {
+        Spacer(modifier = Modifier.height(86.dp))
+
         Text(
             text = "GPS Proximity Sensor",
             style = MaterialTheme.typography.headlineLarge.copy(
@@ -874,6 +1074,7 @@ fun LocationSensorScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
+            state = proximityListState,
             contentPadding = PaddingValues(bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -2019,7 +2220,8 @@ fun BadgeRow(badgeName: String, desc: String, unlocked: Boolean, icon: androidx.
 @Composable
 fun SettingsScreen(
     viewModel: GemViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenPwa: (() -> Unit)? = null
 ) {
     val radiusLimit by viewModel.radiusLimitInMeters.collectAsState()
     val verifiedFilter by viewModel.verifiedFilter.collectAsState()
@@ -2166,6 +2368,15 @@ fun SettingsScreen(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Fully functional PWA Download & Quick-Install Widget
+        PwaInstallCard(
+            pwaUrl = DEFAULT_PWA_URL,
+            viewModel = viewModel,
+            modifier = Modifier.fillMaxWidth()
+        )
 
         Spacer(modifier = Modifier.height(120.dp))
     }

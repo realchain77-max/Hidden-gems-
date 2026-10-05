@@ -19,6 +19,7 @@ val Slate900 = Color(0xFF1A1C1E) // Maps to BgBase
 val Slate800 = Color(0xFF3D4758) // Maps to SecondarySurface
 val Slate700 = Color(0xFF44474E) // Maps to Border
 val Emerald500 = SophisticatedSecondary // Sage Green for standard explorer pins/labels
+val Emerald400 = Color(0xFF34D399)
 val Emerald700 = Color(0xFF8BB58B)
 val Violet500 = SophisticatedPrimary   // Lavender for business pins/labels
 val Violet700 = Color(0xFFB59FFA)

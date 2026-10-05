@@ -24,7 +24,16 @@ data class HiddenGem(
     val createdAt: Long = System.currentTimeMillis(),
     val upvotes: Int = 0,
     val downvotes: Int = 0,
-    val category: String = "Scenic"
+    val category: String = "Scenic",
+    val captureTimestamp: Long? = null,
+    val captureLat: Double? = null,
+    val captureLng: Double? = null,
+    val gpsAccuracyMeters: Float? = null,
+    val isLiveVerified: Boolean = false,
+    val photoBase64: String? = null,
+    val cloudSynced: Boolean = false,
+    val cloudId: String? = null,
+    val aiLocationAnalysis: String? = null
 )
 
 @Entity(tableName = "gem_activities")

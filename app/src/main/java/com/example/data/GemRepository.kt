@@ -73,170 +73,282 @@ class GemRepository(private val gemDao: GemDao) {
         try {
             val existingGems = gemDao.getAllGems()
             if (existingGems.isNotEmpty()) {
-                Log.d("GemRepository", "Database already seeded. Total gems: ${existingGems.size}")
-                return
+                val hasKenyaData = existingGems.any { it.title.contains("Pickled") || it.title.contains("Watamu") || it.title.contains("Nairobi") }
+                if (hasKenyaData) {
+                    Log.d("GemRepository", "Database already seeded with Kenya data. Total gems: ${existingGems.size}")
+                    return
+                } else {
+                    // Clear legacy SF data to load Kenya dataset
+                    gemDao.deleteAllGems()
+                }
             }
 
-            Log.d("GemRepository", "Seeding database with default Hidden Gems and Users...")
+            Log.d("GemRepository", "Seeding database with default Kenya Hidden Gems, Users, Activities, and Reviews...")
 
             // 1. Seed Users
-            val userExplorerId = gemDao.insertUser(User(id = 1, username = "ExplorerJess", email = "lopezjessie891@gmail.com", role = "explorer"))
-            val userBusinessId1 = gemDao.insertUser(User(id = 2, username = "MacondrayFloraCafe", email = "flora@macondray.com", role = "business"))
-            val userBusinessId2 = gemDao.insertUser(User(id = 3, username = "SewardDerbyManager", email = "manager@sewardslides.org", role = "business"))
-            val userBusinessId3 = gemDao.insertUser(User(id = 4, username = "LandsEndLabyrinthCo", email = "walks@landsend.org", role = "business"))
+            val userExplorerId = gemDao.insertUser(User(id = 1, username = "NairobiExplorer", email = "explorer@kenya.com", role = "explorer"))
+            val userBusinessId1 = gemDao.insertUser(User(id = 2, username = "PickledKeManager", email = "hello@pickled.co.ke", role = "business"))
+            val userBusinessId2 = gemDao.insertUser(User(id = 3, username = "CrabShackDabasoHost", email = "info@dabaso.co.ke", role = "business"))
+            val userBusinessId3 = gemDao.insertUser(User(id = 4, username = "JahaziSwahiliCoffee", email = "coffee@jahazi.co.ke", role = "business"))
 
-            // 2. Seed Gems (Latitudes/Longitudes around SF area, bounding box: 37.74 to 37.82, -122.53 to -122.40)
+            // 2. Seed Kenya Hidden Gems
+            // @pickledke - Artisanal Deli & Cafe
             val gem1Id = gemDao.insertGem(HiddenGem(
                 id = 1,
-                title = "Sutro Baths Ruins",
-                description = "Faded concrete ruins of a massive 19th-century public indoor swimming pool complex, sitting right on the edge of the Pacific Ocean. Mystical coastal breeze, saltwater pools, and a dark rock cave to walk through.",
-                latitude = 37.7796,
-                longitude = -122.5137,
+                title = "Pickled (@pickledke)",
+                description = "Boutique artisanal deli & leafy garden bistro in Lavington/Kilimani (@pickledke). Celebrated for handcrafted ferments, house-made quick pickles, sourdough gourmet sandwiches, smash burgers, and specialty iced cold brews in a relaxed open-air courtyard.",
+                latitude = -1.2884,
+                longitude = 36.7820,
+                uploaderId = 2,
+                isVerified = true,
+                upvotes = 245,
+                downvotes = 3,
+                category = "Dining",
+                captureTimestamp = System.currentTimeMillis() - 7200000L,
+                captureLat = -1.2884,
+                captureLng = 36.7820,
+                gpsAccuracyMeters = 3.2f,
+                isLiveVerified = true
+            )).toInt()
+
+            // Nairobi Arboretum
+            val gem2Id = gemDao.insertGem(HiddenGem(
+                id = 2,
+                title = "Nairobi Arboretum Forest Glade",
+                description = "30-hectare peaceful woodland sanctuary right in Kilimani/State House area. Features towering indigenous shade trees, winding gravel paths, playful Sykes monkeys, and hidden grassy glades ideal for quiet reading and weekend picnics.",
+                latitude = -1.2750,
+                longitude = 36.8080,
+                uploaderId = 1,
+                isVerified = true,
+                upvotes = 182,
+                downvotes = 4,
+                category = "Parks",
+                captureTimestamp = System.currentTimeMillis() - 14400000L,
+                captureLat = -1.2750,
+                captureLng = 36.8080,
+                gpsAccuracyMeters = 4.1f,
+                isLiveVerified = true
+            )).toInt()
+
+            // Koinange Secret Rooftop & Dawa Bar
+            val gem3Id = gemDao.insertGem(HiddenGem(
+                id = 3,
+                title = "Koinange Secret Rooftop & Dawa Lounge",
+                description = "Hidden rooftop hideaway perched high above central Nairobi CBD. Serves authentic Kenyan Dawa cocktails with vodka, lime, and local honey, fresh nyama choma grills, and live acoustic Afro-jazz background sets.",
+                latitude = -1.2833,
+                longitude = 36.8167,
                 uploaderId = 1,
                 isVerified = false,
-                upvotes = 120,
+                upvotes = 138,
                 downvotes = 5,
+                category = "Nightlife"
+            )).toInt()
+
+            // Watamu Crab Shack Dabaso
+            val gem4Id = gemDao.insertGem(HiddenGem(
+                id = 4,
+                title = "Crab Shack Dabaso (Mida Creek)",
+                description = "Raised wooden boardwalk suspended above the tranquil mangrove swamp of Mida Creek in Watamu. Famous for fresh mud crab samosas, grilled tiger prawns, coconut fish, and breathtaking sunset dhow cruises.",
+                latitude = -3.3421,
+                longitude = 39.9615,
+                uploaderId = 3,
+                isVerified = true,
+                upvotes = 290,
+                downvotes = 2,
+                category = "Dining",
+                captureTimestamp = System.currentTimeMillis() - 21600000L,
+                captureLat = -3.3421,
+                captureLng = 39.9615,
+                gpsAccuracyMeters = 2.8f,
+                isLiveVerified = true
+            )).toInt()
+
+            // Watamu Ocean Breeze Cove & Turtle Watch
+            val gem5Id = gemDao.insertGem(HiddenGem(
+                id = 5,
+                title = "Watamu Ocean Breeze Cove & Turtle Refuge",
+                description = "Secluded turquoise marine lagoon flanked by coral cliffs and powdery white sand. Watch sea turtle hatchlings safely make their journey to the ocean with local Watamu marine conservationists.",
+                latitude = -3.3550,
+                longitude = 39.9800,
+                uploaderId = 1,
+                isVerified = false,
+                upvotes = 210,
+                downvotes = 1,
                 category = "Beaches"
             )).toInt()
 
-            val gem2Id = gemDao.insertGem(HiddenGem(
-                id = 2,
-                title = "Seward Street Slides",
-                description = "Two long, steep concrete slides tucked away inside a quiet neighborhood park in Castro/Noe Valley. Adults and children slide down on pieces of cardboard provided by locals. Sensation of retro neighborhood fun!",
-                latitude = 37.7578,
-                longitude = -122.4398,
-                uploaderId = 3,
+            // Jahazi Coffee House - Mombasa Old Town
+            val gem6Id = gemDao.insertGem(HiddenGem(
+                id = 6,
+                title = "Jahazi Coffee House (Mombasa Old Town)",
+                description = "Authentic Swahili heritage coffee house nestled in ancient Mombasa Old Town. Sit on traditional hand-carved floor cushions, sip spiced cardamom Kahwa coffee, and enjoy warm mahamri with coconut tea.",
+                latitude = -4.0590,
+                longitude = 39.6780,
+                uploaderId = 4,
                 isVerified = true,
-                upvotes = 84,
+                upvotes = 195,
                 downvotes = 2,
-                category = "Parks"
-            )).toInt()
-
-            val gem3Id = gemDao.insertGem(HiddenGem(
-                id = 3,
-                title = "The Wave Organ",
-                description = "An acoustic wave-activated organ built on a jetty in the marina, featuring PVC and concrete pipes that gurgle, bubble, and sigh with the movement of changing bay tides. Best enjoyed at high tide!",
-                latitude = 37.8085,
-                longitude = -122.4367,
-                uploaderId = 1,
-                isVerified = false,
-                upvotes = 62,
-                downvotes = 8,
-                category = "Scenic"
-            )).toInt()
-
-            val gem4Id = gemDao.insertGem(HiddenGem(
-                id = 4,
-                title = "Macondray Lane",
-                description = "A hidden, lush pedestrian-only lane with rustic wooden paths, tiny historic cottages, climbing roses, and towering green canopies in Russian Hill. Inspiration for the famous fictional 'Barbary Lane'.",
-                latitude = 37.8002,
-                longitude = -122.4172,
-                uploaderId = 2,
-                isVerified = true,
-                upvotes = 45,
-                downvotes = 1,
                 category = "Historic"
             )).toInt()
 
-            val gem5Id = gemDao.insertGem(HiddenGem(
-                id = 5,
-                title = "Point Bonita Lighthouse",
-                description = "A stunning lighthouse clinging to a rocky cliff in the Marin Headlands, accessed via a high suspension bridge over roaring ocean waters. Breathtaking views of the Golden Gate Strait and crashing waves.",
-                latitude = 37.8155,
-                longitude = -122.5295,
+            // Fort Jesus Harbor Night Courtyard - Mombasa
+            val gem7Id = gemDao.insertGem(HiddenGem(
+                id = 7,
+                title = "Fort Jesus Harbor Night Courtyard",
+                description = "16th-century Portuguese fortress built on coral rock guarding Mombasa Harbor. Illuminated by torches at night for traditional Swahili banquets, live Taarab music, and sound-and-light history shows.",
+                latitude = -4.0628,
+                longitude = 39.6795,
+                uploaderId = 1,
+                isVerified = true,
+                upvotes = 220,
+                downvotes = 4,
+                category = "Historic"
+            )).toInt()
+
+            // KiteSurfing Lagoon & Forty Thieves - Diani
+            val gem8Id = gemDao.insertGem(HiddenGem(
+                id = 8,
+                title = "KiteSurfing Lagoon & Diani Oceanfront",
+                description = "Iconic tropical paradise on Diani Beach with pristine turquoise tidal waters, ideal for kitesurfing, oceanfront seafood grills, fresh coconut water, and sunset palm tree swings.",
+                latitude = -4.2790,
+                longitude = 39.5920,
                 uploaderId = 1,
                 isVerified = false,
-                upvotes = 110,
-                downvotes = 4,
+                upvotes = 310,
+                downvotes = 6,
+                category = "Beaches"
+            )).toInt()
+
+            // Gedi Ruins Sunken Forest - Malindi
+            val gem9Id = gemDao.insertGem(HiddenGem(
+                id = 9,
+                title = "Gedi Ruins Sunken Forest (Malindi)",
+                description = "Mystical 12th-century ruined Swahili stone city hidden deep inside a lush indigenous forest dominated by giant baobabs, Sykes monkeys, and rare wildlife.",
+                latitude = -3.3080,
+                longitude = 40.0160,
+                uploaderId = 1,
+                isVerified = false,
+                upvotes = 165,
+                downvotes = 3,
+                category = "Historic"
+            )).toInt()
+
+            // Hell's Gate Gorge & Fischer's Tower - Naivasha
+            val gem10Id = gemDao.insertGem(HiddenGem(
+                id = 10,
+                title = "Hell's Gate Gorge & Fischer's Tower",
+                description = "Dramatic towering volcanic rock pillars, red sandstone gorges, and natural geothermal hot springs in Naivasha where you can ride bicycles alongside zebras and gazelles.",
+                latitude = -0.8870,
+                longitude = 36.3190,
+                uploaderId = 1,
+                isVerified = false,
+                upvotes = 240,
+                downvotes = 5,
                 category = "Scenic"
             )).toInt()
 
-            val gem6Id = gemDao.insertGem(HiddenGem(
-                id = 6,
-                title = "Lands End Labyrinth",
-                description = "A peaceful rock labyrinth created by a local artist on a scenic plateau above Mile Rock Beach. Provides a beautiful space for mindfulness walk and contemplation with the Golden Gate Bridge in the background.",
-                latitude = 37.7881,
-                longitude = -122.5058,
-                uploaderId = 4,
+            // The Alchemist & Yard Market - Westlands
+            val gem11Id = gemDao.insertGem(HiddenGem(
+                id = 11,
+                title = "The Alchemist Creative Yard",
+                description = "Vibrant creative collective featuring food trucks, local artisan pop-up boutiques, open-air cinema nights, and DJ music stages surrounded by lush potted plants in Westlands, Nairobi.",
+                latitude = -1.2645,
+                longitude = 36.8045,
+                uploaderId = 1,
                 isVerified = true,
-                upvotes = 95,
-                downvotes = 3,
+                upvotes = 280,
+                downvotes = 7,
+                category = "Nightlife"
+            )).toInt()
+
+            // Shela Beach Floating Dhow Bar - Lamu
+            val gem12Id = gemDao.insertGem(HiddenGem(
+                id = 12,
+                title = "Shela Beach Floating Dhow Bar (Lamu)",
+                description = "Floating wooden dhow anchored off Shela Beach in Lamu. Catch gentle sea breezes, enjoy fresh mango passion juice or cocktails, and watch traditional dhow sails drift by at twilight.",
+                latitude = -2.2686,
+                longitude = 40.9020,
+                uploaderId = 1,
+                isVerified = false,
+                upvotes = 190,
+                downvotes = 2,
                 category = "Scenic"
             )).toInt()
 
             // 3. Seed Activities (For Verified Business Spots)
-            // Seward Street Slides Activities
+            // @pickledke Activities
             gemDao.insertActivity(GemActivity(
-                gemId = gem2Id,
-                activityName = "Seward Slide Derby & Cards",
-                description = "Join the weekly Slide Derby! We supply heavy-duty waxed cardboard and friction-reducing chalk for the ultimate speed sliding experience. Includes a local slide racer badge!",
-                schedule = "Fridays and Saturdays at 4:00 PM - 6:00 PM",
-                priceLevel = 1,
-                isActive = true
-            ))
-
-            // Macondray Lane Activities
-            gemDao.insertActivity(GemActivity(
-                gemId = gem4Id,
-                activityName = "Flora, Poetry & Matcha Walk",
-                description = "A guided historical walking tour highlighting rare botanical varieties, old Russian Hill literature, culminating in an elegant ceremonial matcha tea service on our hidden courtyard patio.",
-                schedule = "Sundays at 10:00 AM - 12:00 PM",
+                gemId = gem1Id,
+                activityName = "Artisanal Ferment Tasting & Brunch Flight",
+                description = "Sample our signature house-fermented kimchi, quick pickles, sourdough toasties, and cold brewed Kenyan coffees in the open garden. Includes a jar of artisan pickled chili garlic to take home!",
+                schedule = "Saturdays & Sundays 10:30 AM - 3:00 PM",
                 priceLevel = 2,
                 isActive = true
             ))
 
-            // Lands End Labyrinth Activities
+            // Crab Shack Dabaso Activities
             gemDao.insertActivity(GemActivity(
-                gemId = gem6Id,
-                activityName = "Sunset Labyrinth Meditation & Solstice Chants",
-                description = "A serene evening group meditation. We walk the concentric stone pathways in silent mindfulness, accompanied by ambient handpan music, then watch the sun dip below the Pacific Horizon.",
-                schedule = "Thursdays at 7:30 PM",
+                gemId = gem4Id,
+                activityName = "Mida Creek Mangrove Sunset Cruise & Mud Crab Dinner",
+                description = "A peaceful guided canoe ride through Mida Creek's mangrove forest as birds return to nest at dusk, followed by a fresh mud crab & seafood banquet at our boardwalk shack.",
+                schedule = "Daily at 4:30 PM - 7:30 PM",
                 priceLevel = 3,
                 isActive = true
             ))
 
+            // Jahazi Coffee House Activities
+            gemDao.insertActivity(GemActivity(
+                gemId = gem6Id,
+                activityName = "Swahili Kahwa Coffee Ceremony & Old Town Storytelling",
+                description = "Experience traditional ginger-spiced Swahili coffee brewing in brass samovars, served with fresh coconut mahamri while hearing historic tales of ancient Mombasa seafaring.",
+                schedule = "Daily 3:00 PM - 6:00 PM",
+                priceLevel = 1,
+                isActive = true
+            ))
+
             // 4. Seed Reviews & Replies
-            // Sutro Baths
+            // @pickledke Reviews
             gemDao.insertReview(GemReview(
                 gemId = gem1Id,
                 userId = 1,
-                username = "UrbanHikingJack",
+                username = "NairobiFoodie_Amani",
                 rating = 5,
                 crowdDensity = 2,
-                comment = "This is my absolute favorite place in San Francisco. Standing on the crumbling concrete walls with waves crashing right next to you is thrilling and beautiful. Must check out the cave!",
-                createdAt = System.currentTimeMillis() - 86400000 * 3
+                comment = "Hands down one of my favorite spots in Nairobi! The sourdough smash burger with pickled jalapenos at @pickledke is out of this world. The outdoor garden vibe is so refreshing.",
+                createdAt = System.currentTimeMillis() - 86400000 * 2
             ))
             gemDao.insertReview(GemReview(
                 gemId = gem1Id,
-                userId = 2,
-                username = "SF_Local_Guide",
-                rating = 4,
-                crowdDensity = 3,
-                comment = "Lovely spot, but it gets incredibly crowded on warm weekends. The old tunnels can get muddy so wear decent shoes. Great history!",
-                createdAt = System.currentTimeMillis() - 86400000
+                userId = 1,
+                username = "CoffeeAndTravels_KE",
+                rating = 5,
+                crowdDensity = 2,
+                comment = "Amazing atmosphere, great iced lattes, and the ferments are incredible. Perfect spot for remote work or a weekend brunch with friends.",
+                createdAt = System.currentTimeMillis() - 86400000,
+                businessReply = "Asante sana! We are delighted you loved the smash burgers and ferments. See you again in the garden soon!"
             ))
 
-            // Seward Street Slides
+            // Crab Shack Dabaso Reviews
+            gemDao.insertReview(GemReview(
+                gemId = gem4Id,
+                userId = 1,
+                username = "WatamuWanderer",
+                rating = 5,
+                crowdDensity = 1,
+                comment = "Unforgettable experience! Walking on the elevated boardwalk through the mangroves into the sunset feels like entering another realm. The crab samosas are a 10/10.",
+                createdAt = System.currentTimeMillis() - 86400000 * 4,
+                businessReply = "Karibu Watamu! We are so happy you enjoyed the mangrove sunset and mud crab samosas!"
+            ))
+
+            // Nairobi Arboretum Reviews
             gemDao.insertReview(GemReview(
                 gemId = gem2Id,
                 userId = 1,
-                username = "AdrenalineMom",
+                username = "NatureWalker_Nbo",
                 rating = 5,
                 crowdDensity = 1,
-                comment = "Amazing community spot! The slides are faster than they look. Grab some cardboard from the bin. Wear jeans so your legs don't get scratched up by the concrete side rails.",
-                createdAt = System.currentTimeMillis() - 86400000 * 5,
-                businessReply = "We are so glad you and your family enjoyed it! We try to make sure the slide entry is cleared and fresh cardboard is in the recycle container daily. Slide fast!"
-            ))
-
-            // The Wave Organ
-            gemDao.insertReview(GemReview(
-                gemId = gem3Id,
-                userId = 1,
-                username = "AcousticEnthusiast",
-                rating = 3,
-                crowdDensity = 1,
-                comment = "Concept is awesome, but you must look up the tide schedule before coming. At low tide, it's virtually silent. Come during high tide or incoming tides for those deep gurgling organ chords!",
-                createdAt = System.currentTimeMillis() - 86400000 * 10
+                comment = "A serene green escape right near CBD. Watched monkeys jumping in the canopy while enjoying a quiet afternoon picnic.",
+                createdAt = System.currentTimeMillis() - 86400000 * 7
             ))
 
             Log.d("GemRepository", "Seed completed successfully.")
